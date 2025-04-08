@@ -3,7 +3,7 @@
 /**
  * Plugin Name: WP IdleKick
  * Description: Automatically logs out any logged-in user after 1 hour of inactivity based on WordPress activity.
- * Version: 0.1
+ * Version: 1.0
  * Author: Angelo
  * License: GPL2
  */
@@ -63,10 +63,12 @@ function wpidlekick_is_license_valid()
         return false;
     }
     $license_data = json_decode(wp_remote_retrieve_body($response), true);
-    $valid = (!empty($license_data) && !empty($license_data['valid']) && $license_data['valid'] === true);
+    // Change is here—using filter_var to accept string "true" or boolean true.
+    $valid = (!empty($license_data) && filter_var($license_data['valid'], FILTER_VALIDATE_BOOLEAN));
     set_transient('wpidlekick_license_valid', $valid, HOUR_IN_SECONDS);
     return $valid;
 }
+
 
 /**
  * Display an admin notice if the plugin does not have a valid license.
@@ -76,7 +78,7 @@ function wpidlekick_admin_license_check()
     if (! is_admin()) {
         return;
     }
-    if (! wpidlekick_is_license_valid()) {
+    if (empty(get_option('wp_idlekick_license_key'))) {
         add_action('admin_notices', function () {
             echo '<div class="notice notice-error"><p>' .
                 __('WP IdleKick is disabled because it does not have a valid license. Please enter a valid license key.', 'wp-idlekick') .
